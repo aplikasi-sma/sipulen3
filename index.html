@@ -375,6 +375,13 @@
                                         <i class="ph ph-caret-down"></i>
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Konsekuensi (Sesuai Aturan)</label>
+                                    <div id="violation-consequence-display" class="w-full px-4 py-3 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-500 min-h-[50px] flex items-center shadow-inner text-sm">
+                                        Pilih jenis pelanggaran terlebih dahulu
+                                    </div>
+                                </div>
                                 
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Status Tindak Lanjut <span class="text-red-500">*</span></label>
@@ -388,9 +395,30 @@
                                 </div>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Catatan Tambahan / Deskripsi</label>
-                                <textarea id="violation-notes" rows="3" placeholder="Tambahkan detail kejadian jika perlu..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all resize-none"></textarea>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Catatan Tambahan / Deskripsi</label>
+                                    <textarea id="violation-notes" rows="3" placeholder="Tambahkan detail kejadian jika perlu..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all resize-none"></textarea>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Foto Bukti <span class="text-xs text-slate-400 font-normal">(Opsional)</span></label>
+                                    <div class="w-full px-4 py-3 bg-slate-50 border border-slate-200 border-dashed rounded-xl flex items-center justify-center relative overflow-hidden group h-[104px]">
+                                        <input type="file" id="violation-photo" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Pilih Foto Bukti">
+                                        <input type="hidden" id="violation-photo-base64">
+                                        
+                                        <div class="text-center transition-all duration-300" id="photo-upload-placeholder">
+                                            <i class="ph ph-image text-2xl text-slate-400 mb-1"></i>
+                                            <p class="text-xs text-slate-500 font-medium">Klik/Tap untuk pilih foto</p>
+                                        </div>
+                                        
+                                        <div class="text-center hidden flex-col items-center justify-center w-full h-full" id="photo-upload-preview">
+                                            <i class="ph-fill ph-check-circle text-green-500 text-2xl mb-1"></i>
+                                            <p class="text-xs text-slate-600 font-bold truncate max-w-[180px]" id="photo-filename">foto_tersimpan.jpg</p>
+                                            <p class="text-[10px] text-brand-600 font-medium mt-0.5">Ketuk untuk mengganti</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
@@ -926,6 +954,7 @@
 
             // Add Violation
             document.getElementById('add-violation-form').addEventListener('submit', handleAddViolation);
+            document.getElementById('violation-category').addEventListener('change', updateConsequenceDisplay);
             
             // Search
             const searchInputAdd = document.getElementById('search-student-input');
@@ -944,6 +973,57 @@
             document.getElementById('add-student-form')?.addEventListener('submit', handleAddStudent);
             document.getElementById('add-teacher-form')?.addEventListener('submit', handleAddTeacher);
             document.getElementById('add-violation-type-form')?.addEventListener('submit', handleAddViolationType);
+
+            // Photo Upload Handler (Compress to Base64)
+            const photoInput = document.getElementById('violation-photo');
+            if (photoInput) {
+                photoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const base64Input = document.getElementById('violation-photo-base64');
+                    const placeholder = document.getElementById('photo-upload-placeholder');
+                    const preview = document.getElementById('photo-upload-preview');
+                    const filenameText = document.getElementById('photo-filename');
+
+                    if (!file) {
+                        if (!base64Input.value) {
+                            placeholder.classList.remove('hidden');
+                            preview.classList.add('hidden');
+                            preview.classList.remove('flex');
+                        }
+                        return;
+                    }
+
+                    filenameText.textContent = file.name;
+                    placeholder.classList.add('hidden');
+                    preview.classList.remove('hidden');
+                    preview.classList.add('flex');
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            const MAX_WIDTH = 800; // Membatasi resolusi agar localStorage tidak kepenuhan
+
+                            if (width > MAX_WIDTH) {
+                                height = Math.round((height * MAX_WIDTH) / width);
+                                width = MAX_WIDTH;
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const base64 = canvas.toDataURL('image/jpeg', 0.6); // Kompresi 60%
+                            base64Input.value = base64;
+                        }
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
         }
 
         // --- AUTHENTICATION ---
@@ -1192,6 +1272,20 @@
             violationTypes.forEach(cat => {
                 select.innerHTML += `<option value="${cat.id}">${cat.name} (${cat.points} Poin)</option>`;
             });
+            updateConsequenceDisplay();
+        }
+
+        function updateConsequenceDisplay() {
+            const catId = document.getElementById('violation-category').value;
+            const display = document.getElementById('violation-consequence-display');
+            if(display) {
+                if(catId) {
+                    const cat = violationTypes.find(c => c.id == catId);
+                    display.innerHTML = cat && cat.consequence ? `<span class="text-slate-800 font-medium"><i class="ph-fill ph-warning-circle text-orange-500 mr-1 text-lg align-middle"></i> ${cat.consequence}</span>` : '<span class="text-slate-400 italic">Tidak ada data konsekuensi</span>';
+                } else {
+                    display.innerHTML = 'Pilih jenis pelanggaran terlebih dahulu';
+                }
+            }
         }
 
         function setDefaultDateTime() {
@@ -1243,6 +1337,12 @@
             document.getElementById('form-add-title').textContent = 'Catat Pelanggaran';
             document.getElementById('form-add-subtitle').textContent = 'Tambahkan catatan pelanggaran baru untuk siswa.';
             document.getElementById('submit-violation-btn').innerHTML = '<i class="ph ph-check-circle text-lg"></i> Simpan Catatan';
+            
+            // Reset UI Foto
+            document.getElementById('violation-photo-base64').value = '';
+            document.getElementById('photo-upload-placeholder').classList.remove('hidden');
+            document.getElementById('photo-upload-preview').classList.add('hidden');
+            document.getElementById('photo-upload-preview').classList.remove('flex');
         }
 
         function cancelAddEdit() {
@@ -1258,6 +1358,7 @@
             const datetime = document.getElementById('violation-datetime').value;
             const status = document.getElementById('violation-status').value;
             const notes = document.getElementById('violation-notes').value;
+            const photoBase64 = document.getElementById('violation-photo-base64').value;
             if(!catId || !datetime) return;
 
             const category = violationTypes.find(c => c.id == catId);
@@ -1288,6 +1389,7 @@
                     violationsHistory[vIndex].date = datetime;
                     violationsHistory[vIndex].status = status;
                     violationsHistory[vIndex].notes = notes;
+                    violationsHistory[vIndex].photo = photoBase64 || null;
                     
                     // Tambahkan petugas yang menindaklanjuti jika statusnya 'Sudah'
                     if (status === 'Sudah') {
@@ -1303,7 +1405,7 @@
 
                 violationsHistory.unshift({
                     id: Date.now(), studentId: selectedStudentId, categoryId: parseInt(catId),
-                    date: datetime, notes: notes,
+                    date: datetime, notes: notes, photo: photoBase64 || null,
                     teacherName: currentTeacherName, status: status,
                     followedUpBy: status === 'Sudah' ? currentTeacherName : null
                 });
@@ -1328,8 +1430,23 @@
 
             document.getElementById('violation-datetime').value = v.date;
             document.getElementById('violation-category').value = v.categoryId;
+            updateConsequenceDisplay();
+            
             document.getElementById('violation-status').value = v.status || 'Belum';
             document.getElementById('violation-notes').value = v.notes || '';
+            
+            // Tampilkan UI Foto jika ada
+            document.getElementById('violation-photo-base64').value = v.photo || '';
+            if (v.photo) {
+                document.getElementById('photo-upload-placeholder').classList.add('hidden');
+                document.getElementById('photo-upload-preview').classList.remove('hidden');
+                document.getElementById('photo-upload-preview').classList.add('flex');
+                document.getElementById('photo-filename').textContent = 'Foto Bukti Tersimpan';
+            } else {
+                document.getElementById('photo-upload-placeholder').classList.remove('hidden');
+                document.getElementById('photo-upload-preview').classList.add('hidden');
+                document.getElementById('photo-upload-preview').classList.remove('flex');
+            }
 
             document.getElementById('form-add-title').textContent = 'Perbarui Data Pelanggaran';
             document.getElementById('form-add-subtitle').textContent = 'Ubah status tindak lanjut atau perbarui detail kejadian.';
@@ -1361,6 +1478,8 @@
                     const recorder = v.teacherName || 'Sistem';
                     const follower = v.followedUpBy ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-[10px] font-bold whitespace-nowrap border border-green-200" title="Ditindaklanjuti oleh"><i class="ph-fill ph-check-circle"></i> Ditindak: ${v.followedUpBy}</span></div>` : '';
                     
+                    const photoBadge = v.photo ? `<div class="mt-2"><a href="${v.photo}" target="_blank" class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-md text-[10px] font-bold whitespace-nowrap border border-blue-200 transition-colors cursor-pointer" title="Lihat Foto Bukti"><i class="ph-fill ph-image"></i> Lihat Bukti</a></div>` : '';
+                    
                     const statusBadge = v.status === 'Sudah' 
                         ? '<span class="inline-flex px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-md uppercase tracking-wider">Sudah</span>'
                         : `<button onclick="editViolationStatus(${v.id})" class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors shadow-sm border border-amber-200 cursor-pointer" title="Klik untuk ubah status/data">Belum <i class="ph ph-pencil-simple text-xs"></i></button>`;
@@ -1372,6 +1491,7 @@
                             <td class="px-6 py-4">
                                 <p class="text-slate-800 font-medium">${category.name}</p>
                                 ${v.notes ? `<p class="text-xs text-slate-600 mt-1 bg-slate-100 p-2 rounded-lg border border-slate-200"><span class="font-semibold text-slate-700">Catatan:</span> ${v.notes}</p>` : '<p class="text-xs text-slate-400 mt-1 italic">Tidak ada catatan</p>'}
+                                ${photoBadge}
                             </td>
                             <td class="px-6 py-4 text-center">${statusBadge}</td>
                             <td class="px-6 py-4">
