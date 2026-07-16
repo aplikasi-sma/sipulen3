@@ -177,6 +177,9 @@
                         <button id="nav-violations-type" onclick="switchView('violations-type')" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-brand-800 text-brand-200 hover:text-white text-sm transition-colors">
                             <i class="ph ph-warning-circle"></i> Jenis Pelanggaran
                         </button>
+                        <button id="nav-rekap" onclick="switchView('rekap')" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-brand-800 text-brand-200 hover:text-white text-sm transition-colors">
+                            <i class="ph ph-chart-polar"></i> Rekap Pencatat
+                        </button>
                         <button id="nav-backup" onclick="switchView('backup')" class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-brand-800 text-brand-200 hover:text-white text-sm transition-colors">
                             <i class="ph ph-database"></i> Pencadangan Data
                         </button>
@@ -324,8 +327,8 @@
                 <!-- VIEW: ADD VIOLATION -->
                 <div id="view-add" class="app-view hidden max-w-3xl mx-auto">
                     <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-slate-800">Catat Pelanggaran</h2>
-                        <p class="text-slate-500 text-sm mt-1">Tambahkan catatan pelanggaran baru untuk siswa.</p>
+                        <h2 id="form-add-title" class="text-2xl font-bold text-slate-800">Catat Pelanggaran</h2>
+                        <p id="form-add-subtitle" class="text-slate-500 text-sm mt-1">Tambahkan catatan pelanggaran baru untuk siswa.</p>
                     </div>
 
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -363,12 +366,23 @@
                                     <input type="datetime-local" id="violation-datetime" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all" required>
                                 </div>
                                 
-                                <div>
+                                <div class="relative">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Jenis Pelanggaran <span class="text-red-500">*</span></label>
                                     <select id="violation-category" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all appearance-none" required>
                                         <!-- Rendered dynamically -->
                                     </select>
-                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500" style="margin-top: 2rem;">
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500" style="margin-top: 1.75rem;">
+                                        <i class="ph ph-caret-down"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="relative">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Status Tindak Lanjut <span class="text-red-500">*</span></label>
+                                    <select id="violation-status" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all appearance-none" required>
+                                        <option value="Belum">Belum ditindaklanjuti</option>
+                                        <option value="Sudah">Sudah ditindaklanjuti</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500" style="margin-top: 1.75rem;">
                                         <i class="ph ph-caret-down"></i>
                                     </div>
                                 </div>
@@ -380,10 +394,10 @@
                             </div>
 
                             <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
-                                <button type="button" onclick="switchView('dashboard')" class="px-6 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium rounded-xl transition-colors">
+                                <button type="button" onclick="cancelAddEdit()" class="px-6 py-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 font-medium rounded-xl transition-colors">
                                     Batal
                                 </button>
-                                <button type="submit" class="px-6 py-2.5 text-white bg-brand-600 hover:bg-brand-700 font-medium rounded-xl shadow-sm shadow-brand-200 transition-colors flex items-center gap-2">
+                                <button type="submit" id="submit-violation-btn" class="px-6 py-2.5 text-white bg-brand-600 hover:bg-brand-700 font-medium rounded-xl shadow-sm shadow-brand-200 transition-colors flex items-center gap-2">
                                     <i class="ph ph-check-circle text-lg"></i> Simpan Catatan
                                 </button>
                             </div>
@@ -411,7 +425,9 @@
                                     <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
                                         <th class="px-6 py-4 font-medium">Waktu</th>
                                         <th class="px-6 py-4 font-medium">Siswa</th>
-                                        <th class="px-6 py-4 font-medium">Pelanggaran</th>
+                                        <th class="px-6 py-4 font-medium">Pelanggaran & Deskripsi</th>
+                                        <th class="px-6 py-4 font-medium text-center">Status</th>
+                                        <th class="px-6 py-4 font-medium">Petugas</th>
                                         <th class="px-6 py-4 font-medium text-center">Poin</th>
                                         <th class="px-6 py-4 font-medium text-center">Aksi</th>
                                     </tr>
@@ -480,9 +496,14 @@
                                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
                                 <input type="text" id="search-teacher-input" placeholder="Cari nama guru..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm shadow-sm">
                             </div>
-                            <button onclick="openAddTeacherModal()" class="px-4 py-2 bg-brand-600 border border-transparent text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm text-sm font-medium flex items-center justify-center gap-2">
-                                <i class="ph ph-plus text-lg"></i> Tambah Akun
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="openImportModal('teacher')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium flex items-center gap-2">
+                                    <i class="ph ph-file-csv text-lg"></i> <span class="hidden sm:inline">Import</span>
+                                </button>
+                                <button onclick="openAddTeacherModal()" class="px-4 py-2 bg-brand-600 border border-transparent text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm text-sm font-medium flex items-center justify-center gap-2">
+                                    <i class="ph ph-plus text-lg"></i> Tambah Akun
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -491,7 +512,7 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-                                        <th class="px-6 py-4 font-medium">Nama Lengkap</th>
+                                        <th class="px-6 py-4 font-medium">Nama Guru</th>
                                         <th class="px-6 py-4 font-medium">Username</th>
                                         <th class="px-6 py-4 font-medium">Password</th>
                                         <th class="px-6 py-4 font-medium">Akses</th>
@@ -504,23 +525,26 @@
                     </div>
                 </div>
 
-                <!-- VIEW: VIOLATIONS CONFIG -->
+                <!-- VIEW: VIOLATIONS-TYPE -->
                 <div id="view-violations-type" class="app-view hidden">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
                         <div>
                             <h2 class="text-2xl font-bold text-slate-800">Jenis Pelanggaran</h2>
-                            <p class="text-slate-500 text-sm mt-1">Konfigurasi bobot poin untuk setiap jenis pelanggaran.</p>
+                            <p class="text-slate-500 text-sm mt-1">Manajemen aturan dan poin pelanggaran.</p>
                         </div>
                         <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                             <div class="relative w-full sm:w-64">
                                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" id="search-violation-type-input" placeholder="Cari nama pelanggaran..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm shadow-sm">
+                                <input type="text" id="search-violation-type-input" placeholder="Cari pelanggaran..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm shadow-sm">
                             </div>
                             <div class="flex gap-2">
+                                <button onclick="deleteAllViolationTypes()" class="px-3 py-2 bg-white border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors shadow-sm text-sm font-medium flex items-center justify-center" title="Kosongkan Semua">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
                                 <button onclick="openImportModal('violation')" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium flex items-center gap-2">
                                     <i class="ph ph-file-csv text-lg"></i> <span class="hidden sm:inline">Import</span>
                                 </button>
-                                <button onclick="openAddViolationTypeModal()" class="px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm text-sm font-medium flex items-center gap-2">
+                                <button onclick="openAddViolationTypeModal()" class="px-4 py-2 bg-brand-600 border border-transparent text-white rounded-xl hover:bg-brand-700 transition-colors shadow-sm text-sm font-medium flex items-center justify-center gap-2">
                                     <i class="ph ph-plus text-lg"></i> Tambah
                                 </button>
                             </div>
@@ -535,6 +559,7 @@
                                         <th class="px-6 py-4 font-medium">Nama Pelanggaran</th>
                                         <th class="px-6 py-4 font-medium text-center">Poin</th>
                                         <th class="px-6 py-4 font-medium">Kategori</th>
+                                        <th class="px-6 py-4 font-medium">Konsekuensi</th>
                                         <th class="px-6 py-4 font-medium text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -575,6 +600,37 @@
                             <h3 class="font-bold text-slate-800 mb-2">Kosongkan Sistem</h3>
                             <p class="text-sm text-slate-500 mb-6 flex-1">Hapus seluruh data siswa dan riwayat secara permanen. Pengaturan guru & jenis pelanggaran akan kembali ke bawaan.</p>
                             <button onclick="handleFactoryReset()" class="w-full py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-medium rounded-xl transition-colors">Kosongkan Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: REKAP PENCATAT -->
+                <div id="view-rekap" class="app-view hidden">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800">Rekap Kinerja Pencatat</h2>
+                            <p class="text-slate-500 text-sm mt-1">Peringkat guru berdasarkan jumlah pelanggaran yang telah diinput dan ditindaklanjuti.</p>
+                        </div>
+                        <div class="relative w-full sm:w-64">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="search-rekap-input" placeholder="Cari nama guru..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                        <th class="px-6 py-4 font-medium text-center w-24">Peringkat</th>
+                                        <th class="px-6 py-4 font-medium">Nama Guru</th>
+                                        <th class="px-6 py-4 font-medium text-center">Input Kasus</th>
+                                        <th class="px-6 py-4 font-medium text-center">Menindaklanjuti</th>
+                                        <th class="px-6 py-4 font-medium text-center">Total Kinerja</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rekap-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -692,6 +748,10 @@
                             </select>
                         </div>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Konsekuensi <span class="text-red-500">*</span></label>
+                        <input type="text" id="new-violation-consequence" placeholder="Misal: Teguran lisan / Pemanggilan Orang Tua" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none" required autocomplete="off">
+                    </div>
                     <div class="pt-4 flex gap-3">
                         <button type="button" onclick="closeAddViolationTypeModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl">Batal</button>
                         <button type="submit" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl">Simpan Data</button>
@@ -808,14 +868,14 @@
         ];
 
         const defaultViolationTypes = [
-            { id: 1, name: 'Terlambat masuk sekolah (>15 menit)', points: 10, category: 'Ringan' },
-            { id: 2, name: 'Tidak memakai atribut seragam lengkap', points: 10, category: 'Ringan' },
-            { id: 3, name: 'Membuang sampah sembarangan', points: 5, category: 'Ringan' },
-            { id: 4, name: 'Membolos pada jam pelajaran', points: 20, category: 'Sedang' },
-            { id: 5, name: 'Meninggalkan sekolah tanpa izin', points: 30, category: 'Sedang' },
-            { id: 6, name: 'Membawa/menghisap rokok di lingkungan sekolah', points: 50, category: 'Berat' },
-            { id: 7, name: 'Berkelahi di lingkungan sekolah', points: 75, category: 'Berat' },
-            { id: 8, name: 'Membawa senjata tajam', points: 100, category: 'Sangat Berat' },
+            { id: 1, name: 'Terlambat masuk sekolah (>15 menit)', points: 10, category: 'Ringan', consequence: 'Teguran lisan' },
+            { id: 2, name: 'Tidak memakai atribut seragam lengkap', points: 10, category: 'Ringan', consequence: 'Teguran lisan & Penugasan' },
+            { id: 3, name: 'Membuang sampah sembarangan', points: 5, category: 'Ringan', consequence: 'Membersihkan lingkungan' },
+            { id: 4, name: 'Membolos pada jam pelajaran', points: 20, category: 'Sedang', consequence: 'Pemanggilan Orang Tua' },
+            { id: 5, name: 'Meninggalkan sekolah tanpa izin', points: 30, category: 'Sedang', consequence: 'Pemanggilan Orang Tua & SP 1' },
+            { id: 6, name: 'Membawa/menghisap rokok di lingkungan sekolah', points: 50, category: 'Berat', consequence: 'SP 2 & Pembinaan khusus' },
+            { id: 7, name: 'Berkelahi di lingkungan sekolah', points: 75, category: 'Berat', consequence: 'SP 3 / Skorsing' },
+            { id: 8, name: 'Membawa senjata tajam', points: 100, category: 'Sangat Berat', consequence: 'Dikembalikan ke Orang Tua' },
         ];
 
         // State Variables
@@ -825,6 +885,7 @@
         let violationsHistory = [];
         
         let selectedStudentId = null;
+        let editingViolationId = null;
         let currentAIStudent = null;
         let aiRawResultText = "";
         let importContext = ""; 
@@ -875,13 +936,14 @@
 
             document.getElementById('search-history-input').addEventListener('input', e => renderHistory(e.target.value));
             document.getElementById('search-student-table-input').addEventListener('input', e => renderStudentsTable(e.target.value));
-            document.getElementById('search-teacher-input').addEventListener('input', e => renderTeachersTable(e.target.value));
-            document.getElementById('search-violation-type-input').addEventListener('input', e => renderViolationTypesTable(e.target.value));
+            document.getElementById('search-teacher-input')?.addEventListener('input', e => renderTeachersTable(e.target.value));
+            document.getElementById('search-violation-type-input')?.addEventListener('input', e => renderViolationTypesTable(e.target.value));
+            document.getElementById('search-rekap-input')?.addEventListener('input', e => renderRekapTable(e.target.value));
 
             // Forms Submit
-            document.getElementById('add-student-form').addEventListener('submit', handleAddStudent);
-            document.getElementById('add-teacher-form').addEventListener('submit', handleAddTeacher);
-            document.getElementById('add-violation-type-form').addEventListener('submit', handleAddViolationType);
+            document.getElementById('add-student-form')?.addEventListener('submit', handleAddStudent);
+            document.getElementById('add-teacher-form')?.addEventListener('submit', handleAddTeacher);
+            document.getElementById('add-violation-type-form')?.addEventListener('submit', handleAddViolationType);
         }
 
         // --- AUTHENTICATION ---
@@ -979,7 +1041,8 @@
             if(viewName === 'students') renderStudentsTable();
             if(viewName === 'teachers') renderTeachersTable();
             if(viewName === 'violations-type') renderViolationTypesTable();
-            if(viewName === 'add') { populateCategoryDropdown(); setDefaultDateTime(); }
+            if(viewName === 'rekap') renderRekapTable();
+            if(viewName === 'add') { populateCategoryDropdown(); resetAddForm(); }
         }
 
         function loadData() {
@@ -1172,25 +1235,105 @@
             document.getElementById('search-student-input').closest('.relative.z-20').classList.remove('hidden');
         }
 
+        function resetAddForm() {
+            document.getElementById('add-violation-form').reset();
+            clearSelectedStudent();
+            setDefaultDateTime();
+            editingViolationId = null;
+            document.getElementById('form-add-title').textContent = 'Catat Pelanggaran';
+            document.getElementById('form-add-subtitle').textContent = 'Tambahkan catatan pelanggaran baru untuk siswa.';
+            document.getElementById('submit-violation-btn').innerHTML = '<i class="ph ph-check-circle text-lg"></i> Simpan Catatan';
+        }
+
+        function cancelAddEdit() {
+            const target = editingViolationId ? 'history' : 'dashboard';
+            resetAddForm();
+            switchView(target);
+        }
+
         function handleAddViolation(e) {
             e.preventDefault();
             if(!selectedStudentId) { showToast('Pilih siswa terlebih dahulu!', 'error'); return; }
             const catId = document.getElementById('violation-category').value;
             const datetime = document.getElementById('violation-datetime').value;
+            const status = document.getElementById('violation-status').value;
+            const notes = document.getElementById('violation-notes').value;
             if(!catId || !datetime) return;
 
             const category = violationTypes.find(c => c.id == catId);
-            const studentIndex = studentsData.findIndex(s => s.id === selectedStudentId);
-            studentsData[studentIndex].points += category.points;
+            const currentTeacherName = localStorage.getItem('sman1_fullname') || 'Guru / Admin';
 
-            violationsHistory.unshift({
-                id: Date.now(), studentId: selectedStudentId, categoryId: category.id,
-                date: datetime, notes: document.getElementById('violation-notes').value
-            });
+            if (editingViolationId) {
+                const vIndex = violationsHistory.findIndex(v => v.id === editingViolationId);
+                if (vIndex > -1) {
+                    const oldV = violationsHistory[vIndex];
+                    
+                    // Kalkulasi ulang poin jika kategori pelanggaran atau nama siswa diganti saat mengedit
+                    if (oldV.studentId !== selectedStudentId || oldV.categoryId != catId) {
+                        const oldCat = violationTypes.find(c => c.id == oldV.categoryId);
+                        const oldStudentIndex = studentsData.findIndex(s => s.id === oldV.studentId);
+                        if(oldStudentIndex > -1 && oldCat) {
+                            studentsData[oldStudentIndex].points -= oldCat.points;
+                            if(studentsData[oldStudentIndex].points < 0) studentsData[oldStudentIndex].points = 0;
+                        }
+                        
+                        const newStudentIndex = studentsData.findIndex(s => s.id === selectedStudentId);
+                        if(newStudentIndex > -1 && category) {
+                            studentsData[newStudentIndex].points += category.points;
+                        }
+                    }
+
+                    violationsHistory[vIndex].studentId = selectedStudentId;
+                    violationsHistory[vIndex].categoryId = parseInt(catId);
+                    violationsHistory[vIndex].date = datetime;
+                    violationsHistory[vIndex].status = status;
+                    violationsHistory[vIndex].notes = notes;
+                    
+                    // Tambahkan petugas yang menindaklanjuti jika statusnya 'Sudah'
+                    if (status === 'Sudah') {
+                        violationsHistory[vIndex].followedUpBy = violationsHistory[vIndex].followedUpBy || currentTeacherName;
+                    } else {
+                        violationsHistory[vIndex].followedUpBy = null;
+                    }
+                }
+                showToast('Catatan berhasil diperbarui!', 'success');
+            } else {
+                const studentIndex = studentsData.findIndex(s => s.id === selectedStudentId);
+                studentsData[studentIndex].points += category.points;
+
+                violationsHistory.unshift({
+                    id: Date.now(), studentId: selectedStudentId, categoryId: parseInt(catId),
+                    date: datetime, notes: notes,
+                    teacherName: currentTeacherName, status: status,
+                    followedUpBy: status === 'Sudah' ? currentTeacherName : null
+                });
+                showToast('Catatan berhasil disimpan!', 'success');
+            }
+            
             saveData();
-            showToast('Catatan berhasil disimpan!', 'success');
-            e.target.reset(); clearSelectedStudent(); setDefaultDateTime();
+            resetAddForm();
             setTimeout(() => switchView('history'), 500);
+        }
+
+        function editViolationStatus(id) {
+            const v = violationsHistory.find(x => x.id === id);
+            if(!v) return;
+
+            switchView('add'); // Ganti view & bersihkan form terlebih dahulu
+
+            editingViolationId = id; // Kunci ID yang sedang diedit
+            
+            const student = studentsData.find(s => s.id === v.studentId);
+            if(student) selectStudent(student);
+
+            document.getElementById('violation-datetime').value = v.date;
+            document.getElementById('violation-category').value = v.categoryId;
+            document.getElementById('violation-status').value = v.status || 'Belum';
+            document.getElementById('violation-notes').value = v.notes || '';
+
+            document.getElementById('form-add-title').textContent = 'Perbarui Data Pelanggaran';
+            document.getElementById('form-add-subtitle').textContent = 'Ubah status tindak lanjut atau perbarui detail kejadian.';
+            document.getElementById('submit-violation-btn').innerHTML = '<i class="ph ph-check-circle text-lg"></i> Simpan Perubahan';
         }
 
         function renderHistory(searchQuery = '') {
@@ -1215,12 +1358,26 @@
                     const student = studentsData.find(s => s.id === v.studentId) || {name:'Terhapus', nis:'-', class:'-'};
                     const category = violationTypes.find(c => c.id === v.categoryId) || {name:'Dihapus', points:0};
                     const dateObj = new Date(v.date);
+                    const recorder = v.teacherName || 'Sistem';
+                    const follower = v.followedUpBy ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-md text-[10px] font-bold whitespace-nowrap border border-green-200" title="Ditindaklanjuti oleh"><i class="ph-fill ph-check-circle"></i> Ditindak: ${v.followedUpBy}</span></div>` : '';
+                    
+                    const statusBadge = v.status === 'Sudah' 
+                        ? '<span class="inline-flex px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-md uppercase tracking-wider">Sudah</span>'
+                        : `<button onclick="editViolationStatus(${v.id})" class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-[10px] font-bold rounded-md uppercase tracking-wider transition-colors shadow-sm border border-amber-200 cursor-pointer" title="Klik untuk ubah status/data">Belum <i class="ph ph-pencil-simple text-xs"></i></button>`;
                     
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-50 border-b border-slate-50 last:border-0">
                             <td class="px-6 py-4 whitespace-nowrap"><p class="font-medium text-slate-800">${dateObj.toLocaleDateString('id-ID')}</p><p class="text-xs text-slate-500">${dateObj.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</p></td>
                             <td class="px-6 py-4"><p class="font-bold text-slate-800">${student.name}</p><p class="text-xs text-slate-500">${student.nis} • ${student.class}</p></td>
-                            <td class="px-6 py-4"><p class="text-slate-800 font-medium">${category.name}</p>${v.notes ? `<p class="text-xs text-slate-500 mt-1 italic">"${v.notes}"</p>` : ''}</td>
+                            <td class="px-6 py-4">
+                                <p class="text-slate-800 font-medium">${category.name}</p>
+                                ${v.notes ? `<p class="text-xs text-slate-600 mt-1 bg-slate-100 p-2 rounded-lg border border-slate-200"><span class="font-semibold text-slate-700">Catatan:</span> ${v.notes}</p>` : '<p class="text-xs text-slate-400 mt-1 italic">Tidak ada catatan</p>'}
+                            </td>
+                            <td class="px-6 py-4 text-center">${statusBadge}</td>
+                            <td class="px-6 py-4">
+                                <div><span class="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium whitespace-nowrap" title="Pencatat"><i class="ph-fill ph-user text-brand-500"></i> ${recorder}</span></div>
+                                ${follower}
+                            </td>
                             <td class="px-6 py-4 text-center"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-red-50 text-red-600">+${category.points}</span></td>
                             <td class="px-6 py-4 text-center"><button onclick="deleteViolation(${v.id})" class="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50"><i class="ph ph-trash text-lg"></i></button></td>
                         </tr>`;
@@ -1258,7 +1415,7 @@
             }
             filtered.sort((a,b) => b.points - a.points).forEach(s => {
                 let badge = '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-md">Aman</span>';
-                if (s.points >= 100) badge = '<span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md">SP 3 (DO)</span>';
+                if (s.points >= 100) badge = '<span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md">Perlu Pembinaan Khusus</span>';
                 else if (s.points >= 75) badge = '<span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-md">SP 2</span>';
                 else if (s.points >= 50) badge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-md">SP 1</span>';
                 else if (s.points > 0) badge = '<span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-md">Teguran</span>';
@@ -1334,6 +1491,7 @@
                         <td class="px-6 py-4 font-medium text-slate-800">${v.name}</td>
                         <td class="px-6 py-4 text-center font-bold text-red-600">${v.points}</td>
                         <td class="px-6 py-4"><span class="px-2 py-1 ${badge} text-xs font-bold rounded-md">${v.category}</span></td>
+                        <td class="px-6 py-4 text-sm text-slate-600">${v.consequence || '-'}</td>
                         <td class="px-6 py-4 text-center">
                             <button onclick="deleteViolationType(${v.id})" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><i class="ph ph-trash text-lg"></i></button>
                         </td>
@@ -1345,6 +1503,106 @@
             showConfirmModal('Hapus Jenis', 'Yakin hapus jenis pelanggaran ini?', 'delete', () => {
                 violationTypes = violationTypes.filter(v => v.id !== id);
                 saveData(); renderViolationTypesTable(); showToast('Jenis pelanggaran dihapus', 'success');
+            });
+        }
+
+        function deleteAllViolationTypes() {
+            if (violationTypes.length === 0) {
+                showToast('Data jenis pelanggaran sudah kosong.', 'error');
+                return;
+            }
+            
+            showConfirmModal(
+                'Hapus Semua Jenis Pelanggaran', 
+                'Peringatan keras: Seluruh data jenis pelanggaran akan dihapus permanen! Apakah Anda sangat yakin?', 
+                'delete', 
+                () => {
+                    violationTypes = [];
+                    saveData(); 
+                    renderViolationTypesTable(); 
+                    showToast('Seluruh jenis pelanggaran telah dikosongkan', 'success');
+                }
+            );
+        }
+
+        // --- STREAMING_CHUNK:Logika Rekap Pencatatan... ---
+        function renderRekapTable(searchQuery = '') {
+            const tbody = document.getElementById('rekap-table-body');
+            tbody.innerHTML = '';
+            
+            // Agregasi (menghitung jumlah catatan & tindak lanjut tiap guru)
+            const teacherCounts = {};
+            violationsHistory.forEach(v => {
+                const tName = v.teacherName || 'Sistem';
+                const fName = v.followedUpBy;
+
+                // Hitung Input
+                if (!teacherCounts[tName]) teacherCounts[tName] = { input: 0, followUp: 0 };
+                teacherCounts[tName].input++;
+
+                // Hitung Tindak Lanjut
+                if (fName) {
+                    if (!teacherCounts[fName]) teacherCounts[fName] = { input: 0, followUp: 0 };
+                    teacherCounts[fName].followUp++;
+                }
+            });
+
+            // Ubah ke format Array agar bisa diurutkan
+            let rekapArray = Object.keys(teacherCounts).map(name => ({
+                name: name,
+                inputCount: teacherCounts[name].input,
+                followUpCount: teacherCounts[name].followUp,
+                totalScore: teacherCounts[name].input + teacherCounts[name].followUp
+            }));
+            
+            // Urutkan dari total skor terbanyak (Input + Tindak Lanjut)
+            rekapArray.sort((a, b) => b.totalScore - a.totalScore);
+
+            // Filter Pencarian
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                rekapArray = rekapArray.filter(item => item.name.toLowerCase().includes(q));
+            }
+
+            if (rekapArray.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">Belum ada data pencatatan atau tindak lanjut.</td></tr>';
+                return;
+            }
+
+            // Render ke Tabel
+            rekapArray.forEach((item, index) => {
+                // Modifikasi lencana peringkat (Rank 1, 2, 3 mendapat ikon medali)
+                let rankBadge = `<span class="font-bold text-slate-500">${index + 1}</span>`;
+                if(index === 0) rankBadge = `<div class="w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto font-bold shadow-sm border border-yellow-200" title="Peringkat 1"><i class="ph-fill ph-trophy text-lg"></i></div>`;
+                else if(index === 1) rankBadge = `<div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center mx-auto font-bold shadow-sm border border-slate-300" title="Peringkat 2"><i class="ph-fill ph-medal text-lg"></i></div>`;
+                else if(index === 2) rankBadge = `<div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto font-bold shadow-sm border border-orange-200" title="Peringkat 3"><i class="ph-fill ph-medal text-lg"></i></div>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors">
+                        <td class="px-6 py-4 text-center align-middle">${rankBadge}</td>
+                        <td class="px-6 py-4 font-bold text-slate-800">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-bold uppercase">${item.name.charAt(0)}</div>
+                                <span>${item.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 font-bold rounded-full text-xs border border-blue-100" title="Total pelanggaran yang dicatat">
+                                ${item.inputCount}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 font-bold rounded-full text-xs border border-green-100" title="Total kasus yang ditindaklanjuti">
+                                ${item.followUpCount}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-brand-50 text-brand-700 font-bold rounded-full text-xs border border-brand-100" title="Total kontribusi">
+                                ${item.totalScore}
+                            </span>
+                        </td>
+                    </tr>
+                `;
             });
         }
 
@@ -1373,7 +1631,7 @@
         function closeAddViolationTypeModal() { document.getElementById('add-violation-type-modal').classList.replace('flex', 'hidden'); document.body.classList.remove('modal-open'); }
         function handleAddViolationType(e) {
             e.preventDefault();
-            violationTypes.push({ id: Date.now(), name: document.getElementById('new-violation-name').value.trim(), points: parseInt(document.getElementById('new-violation-points').value), category: document.getElementById('new-violation-category').value });
+            violationTypes.push({ id: Date.now(), name: document.getElementById('new-violation-name').value.trim(), points: parseInt(document.getElementById('new-violation-points').value), category: document.getElementById('new-violation-category').value, consequence: document.getElementById('new-violation-consequence').value.trim() });
             saveData(); renderViolationTypesTable(); closeAddViolationTypeModal(); e.target.reset(); showToast('Pelanggaran ditambahkan', 'success');
         }
 
@@ -1382,7 +1640,8 @@
             importContext = context;
             const instruction = document.getElementById('import-modal-instruction');
             if(context === 'student') instruction.innerHTML = '<p class="font-bold">Format CSV: NIS, Nama, Kelas</p><p class="text-xs mt-1">Baris pertama (header) diabaikan.</p>';
-            if(context === 'violation') instruction.innerHTML = '<p class="font-bold">Format CSV: Nama Pelanggaran, Poin, Kategori</p><p class="text-xs mt-1">Kategori: Ringan, Sedang, Berat, Sangat Berat.</p>';
+            if(context === 'violation') instruction.innerHTML = '<p class="font-bold">Format CSV: Nama Pelanggaran, Poin, Kategori, Konsekuensi</p><p class="text-xs mt-1">Kategori: Ringan, Sedang, Berat, Sangat Berat.</p>';
+            if(context === 'teacher') instruction.innerHTML = '<p class="font-bold">Format CSV: Nama Lengkap, Username, Password, Akses</p><p class="text-xs mt-1">Akses diisi dengan: Admin atau Guru. Baris pertama diabaikan.</p>';
             document.getElementById('import-modal').classList.replace('hidden', 'flex'); document.getElementById('import-file-input').value = '';
         }
         function closeImportModal() { document.getElementById('import-modal').classList.replace('flex', 'hidden'); }
@@ -1402,12 +1661,19 @@
                             if(studentsData.some(s => s.nis === cols[0].trim())) dup++;
                             else { studentsData.push({ id: Date.now()+i, nis: cols[0].trim(), name: cols[1].trim(), class: cols[2].trim(), points: 0 }); added++; }
                         } else if(importContext === 'violation') {
-                            violationTypes.push({ id: Date.now()+i, name: cols[0].trim(), points: parseInt(cols[1].trim()) || 10, category: cols[2].trim() }); added++;
+                            const consequenceVal = cols.length >= 4 ? cols[3].trim() : '-';
+                            violationTypes.push({ id: Date.now()+i, name: cols[0].trim(), points: parseInt(cols[1].trim()) || 10, category: cols[2].trim(), consequence: consequenceVal }); added++;
+                        } else if(importContext === 'teacher') {
+                            const uname = cols[1].trim();
+                            if(teachersData.some(t => t.username === uname)) dup++;
+                            else { teachersData.push({ id: Date.now()+i, name: cols[0].trim(), username: uname, password: cols[2].trim(), role: cols.length >= 4 ? cols[3].trim() : 'Guru' }); added++; }
                         }
                     }
                 }
                 saveData(); 
-                if(importContext === 'student') renderStudentsTable(); else renderViolationTypesTable();
+                if(importContext === 'student') renderStudentsTable(); 
+                else if(importContext === 'teacher') renderTeachersTable();
+                else renderViolationTypesTable();
                 closeImportModal();
                 if(added > 0) showToast(`Berhasil import ${added} data. ${dup>0?`(${dup} duplikat)`:''}`, 'success');
                 else showToast('Tidak ada data dimasukkan', 'error');
